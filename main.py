@@ -46,7 +46,7 @@ def connectToWiFi():
     else:
         print("Failed to connect to WiFi after " + str(maxConnectionAttempts) + " tries")
         return False
-#connectToWiFi()
+connectToWiFi()
 
 ###############################################################################################################
 # MQTT setup
@@ -62,12 +62,14 @@ def onMQTTMessage(topic, msg, retain, dup):
     print('MQTT message received on topic ' + topic + ' message: ' + msg)
 # connect MQTT
 mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword)
+mqttClient.set_callback(onMQTTMessage)
+mqttIsConnected = False
 def connectToMQTT():
-    if not mqttClient.is_conn_issue():
-        return True
-    mqttClient.set_callback(onMQTTMessage)
-    mqttClient.connect()
-    sleep(30)
+    if not mqttIsConnected:
+        print("Connecting to MQTT server at " + secrets.mqttServerAddress)
+        mqttClient.connect()
+    else:
+        mqttClient.ping()
     maxConnectionAttempts = 10
     timeBetweenConnectionAttempts = 60
     connectionAttemptNumber = 1
@@ -77,13 +79,19 @@ def connectToMQTT():
         connectionAttemptNumber += 1
         sleep(timeBetweenConnectionAttempts)
     if not mqttClient.is_conn_issue():
-        # MQTT discovery for home assistant
-        mqttClient.publish("homeassistant/sensor/" + sensorName + "/config", json.dumps(config))
+        if not mqttIsConnected:
+            # MQTT discovery for home assistant
+            mqttClient.publish("homeassistant/sensor/" + sensorName + "/config", json.dumps(config))
+            # Subscribe to any desired topics
+            # mqttClient.subscribe("/" + sensorName)
+        else:
+            mqttClient.resubscribe()
         return True
     else:
         print("Failed to connect to MQTT after " + str(maxConnectionAttempts) + " tries")
         return False
-#connectToMQTT()
+connectToMQTT()
+mqttIsConnected = True
 
 ###############################################################################################################
 # Load cell setup
@@ -97,6 +105,6 @@ while(True):
     waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
     print("Water level: " + str(waterLevel))
     # report water level to server
-    #if connectToWiFi() and connectToMQTT():
-        #mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
+    if connectToWiFi() and connectToMQTT():
+        mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
     sleep(updateInterval)
