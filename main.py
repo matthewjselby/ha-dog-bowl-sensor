@@ -1,5 +1,4 @@
 from hx711 import HX711
-from machine import freq
 import network
 from umqtt.robust import MQTTClient
 from time import sleep
