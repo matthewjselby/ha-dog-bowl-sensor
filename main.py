@@ -17,9 +17,6 @@ loadCellZeroValue = -81500                  # load cell specific zero value (wha
 loadCellScalingFactor = 227                 # scaling factor to convert numeric value read from load cell to grams
 emptyBowlWeight = 1140                      # how many grams does the empty water bowl weigh?
 
-# set clock freq to 160 MHz -- enables proper readings from hx711 chip
-#freq(160000000)
-
 ###############################################################################################################
 # WiFi setup
 ################################################################################################################
@@ -44,7 +41,7 @@ def connectToWiFi():
         print('Connected to WiFi with IP: ' + status[0])
         return True
     else:
-        print("Failed to connect to WiFi after " + str(maxConnectionAttempts) + " tries")
+        print(f"Failed to connect to WiFi after {maxConnectionAttempts} tries")
         return False
 connectToWiFi()
 
@@ -55,7 +52,8 @@ stateTopic = "homeassistant/" + sensorName + "/state"
 config = {
     "name" : sensorFriendlyName,
     "state_topic": stateTopic,
-    "value_template": "{{ value_json.waterLevel }}"
+    "value_template": "{{ value_json.waterLevel }}",
+    "unit_of_measurement": "oz"
 }
 # MQTT callback (for handling messages received -- not currently used for anything)
 def onMQTTMessage(topic, msg, retain, dup):
@@ -63,9 +61,9 @@ def onMQTTMessage(topic, msg, retain, dup):
 # connect MQTT
 mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword)
 mqttClient.set_callback(onMQTTMessage)
-mqttIsConnected = False
+mqttInitialConnectionMade = False
 def connectToMQTT():
-    if not mqttIsConnected:
+    if not mqttInitialConnectionMade:
         print("Connecting to MQTT server at " + secrets.mqttServerAddress)
         mqttClient.connect()
     else:
@@ -79,7 +77,7 @@ def connectToMQTT():
         connectionAttemptNumber += 1
         sleep(timeBetweenConnectionAttempts)
     if not mqttClient.is_conn_issue():
-        if not mqttIsConnected:
+        if not mqttInitialConnectionMade:
             # MQTT discovery for home assistant
             mqttClient.publish("homeassistant/sensor/" + sensorName + "/config", json.dumps(config))
             # Subscribe to any desired topics
@@ -91,7 +89,7 @@ def connectToMQTT():
         print("Failed to connect to MQTT after " + str(maxConnectionAttempts) + " tries")
         return False
 connectToMQTT()
-mqttIsConnected = True
+mqttInitialConnectionMade = True
 
 ###############################################################################################################
 # Load cell setup
