@@ -8,7 +8,7 @@ import secrets
 
 ###############################################################################################################
 # Config variables
-################################################################################################################
+###############################################################################################################
 sensorName = "water_bowl_sensor"            # name of the sensor (this is how the sensor will show up in Home Assistant)
 sensorFriendlyName = "Water bowl sensor"    # friendly name of sensor to be shown in Home Assistant
 updateInterval = 5 * 60                     # how often the sensor reports to the MQTT server (in seconds)
@@ -18,15 +18,16 @@ emptyBowlWeight = 1140                      # how many grams does the empty wate
 
 ###############################################################################################################
 # WiFi setup
-################################################################################################################
+###############################################################################################################
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 def connectToWiFi():
     if wlan.isconnected():
+        status = wlan.ifconfig()
+        print('Connected to WiFi with IP: ' + status[0])
         return True
     print("Connecting to WiFi")
     wlan.connect(secrets.wifiSSID, secrets.wifiPassword)
-    sleep(30)
     maxConnectionAttempts = 10
     timeBetweenConnectionAttempts = 60
     connectionAttemptNumber = 1
@@ -46,7 +47,7 @@ connectToWiFi()
 
 ###############################################################################################################
 # MQTT setup
-################################################################################################################
+###############################################################################################################
 stateTopic = "homeassistant/" + sensorName + "/state"
 config = {
     "name" : sensorFriendlyName,
@@ -54,16 +55,19 @@ config = {
     "value_template": "{{ value_json.waterLevel }}",
     "unit_of_measurement": "oz"
 }
-# MQTT callback (for handling messages received -- not currently used for anything)
-def onMQTTMessage(topic, msg, retain, dup):
-    print('MQTT message received on topic ' + topic + ' message: ' + msg)
-# connect MQTT
 mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword)
+# MQTT callback
+def onMQTTMessage(topic, msg, retain, dup):
+    print(f"MQTT message received on topic {topic} - message \"{msg}\"")
+    if topic == b"homeassistant/status" and msg == b"online":
+        print("Home assistant restarted...resending sensor value(s)")
+        measureAndReport()
+# connect MQTT
 mqttClient.set_callback(onMQTTMessage)
 mqttInitialConnectionMade = False
 def connectToMQTT():
     if not mqttInitialConnectionMade:
-        print("Connecting to MQTT server at " + secrets.mqttServerAddress)
+        print(f"Connecting to MQTT server at {secrets.mqttServerAddress}")
         mqttClient.connect()
     else:
         mqttClient.ping()
@@ -71,37 +75,49 @@ def connectToMQTT():
     timeBetweenConnectionAttempts = 60
     connectionAttemptNumber = 1
     while mqttClient.is_conn_issue() and connectionAttemptNumber <= maxConnectionAttempts:
-        print("Failed to connect to MQTT server...trying again in " + str(timeBetweenConnectionAttempts) + " seconds (reconnection attempt " + str(connectionAttemptNumber) + ")")
+        print(f"Failed to connect to MQTT server...trying again in {timeBetweenConnectionAttempts} seconds (reconnection attempt {connectionAttemptNumber})")
         mqttClient.reconnect()
         connectionAttemptNumber += 1
         sleep(timeBetweenConnectionAttempts)
     if not mqttClient.is_conn_issue():
+        print(f"Connected to MQTT server at {secrets.mqttServerAddress}")
         if not mqttInitialConnectionMade:
-            # MQTT discovery for home assistant
-            mqttClient.publish("homeassistant/sensor/" + sensorName + "/config", json.dumps(config))
             # Subscribe to any desired topics
-            # mqttClient.subscribe("/" + sensorName)
+            mqttClient.subscribe(b"homeassistant/status")
+            # MQTT discovery for home assistant
+            mqttClient.publish(f"homeassistant/sensor/{sensorName}/config", json.dumps(config), retain=True)
         else:
             mqttClient.resubscribe()
         return True
     else:
-        print("Failed to connect to MQTT after " + str(maxConnectionAttempts) + " tries")
+        print(f"Failed to connect to MQTT after {maxConnectionAttempts} tries")
         return False
 connectToMQTT()
 mqttInitialConnectionMade = True
 
 ###############################################################################################################
 # Load cell setup
-################################################################################################################
+###############################################################################################################
 loadCell = HX711(d_out=17, pd_sck=16)
 loadCell.channel = HX711.CHANNEL_A_64
+timeSinceLastUpdate = updateInterval
 
-while(True):
+def measureAndReport():
     # read load cell and calculate water level in bowl
     scaledValue = (loadCell.read() - loadCellZeroValue) / loadCellScalingFactor
     waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
-    print("Water level: " + str(waterLevel))
+    print(f"Water level: {waterLevel}")
     # report water level to server
     if connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
-    sleep(updateInterval)
+        print("Message sent to MQTT server")
+
+
+while(True):
+    if timeSinceLastUpdate == updateInterval:
+        timeSinceLastUpdate = 0
+        measureAndReport()
+    else:
+        timeSinceLastUpdate += 1
+    mqttClient.check_msg()
+    sleep(1)
