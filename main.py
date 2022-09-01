@@ -11,9 +11,8 @@ import secrets
 ###############################################################################################################
 sensorName = "water_bowl_sensor"            # name of the sensor (this is how the sensor will show up in Home Assistant)
 sensorFriendlyName = "Water bowl sensor"    # friendly name of sensor to be shown in Home Assistant
-updateInterval = 5 * 60                     # how often the sensor reports to the MQTT server (in seconds)
-loadCellZeroValue = -81500                  # load cell specific zero value (what does your load cell read with zero weight on it?)
-loadCellScalingFactor = 227                 # scaling factor to convert numeric value read from load cell to grams
+loadCellZeroValue = -81500                  # load cell specific zero value (what does your load cell read with zero weight on it?) - raw value (not grams)
+loadCellScalingFactor = 227                 # scaling factor to convert raw value read from load cell to grams
 emptyBowlWeight = 1140                      # how many grams does the empty water bowl weigh?
 
 ###############################################################################################################
@@ -61,7 +60,9 @@ def onMQTTMessage(topic, msg, retain, dup):
     print(f"MQTT message received on topic {topic} - message \"{msg}\"")
     if topic == b"homeassistant/status" and msg == b"online":
         print("Home assistant restarted...resending sensor value(s)")
-        measureAndReport()
+        if connectToWiFi() and connectToMQTT():
+            mqttClient.publish(stateTopic, json.dumps({'waterLevel': lastWaterLevel}))
+            print("Message sent to MQTT server")
 # connect MQTT
 mqttClient.set_callback(onMQTTMessage)
 mqttInitialConnectionMade = False
@@ -100,24 +101,17 @@ mqttInitialConnectionMade = True
 ###############################################################################################################
 loadCell = HX711(d_out=17, pd_sck=16)
 loadCell.channel = HX711.CHANNEL_A_64
-timeSinceLastUpdate = updateInterval
+lastWaterLevel = 0
 
-def measureAndReport():
+while(True):
     # read load cell and calculate water level in bowl
     scaledValue = (loadCell.read() - loadCellZeroValue) / loadCellScalingFactor
     waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
     print(f"Water level: {waterLevel}")
-    # report water level to server
-    if connectToWiFi() and connectToMQTT():
+    # if water level has changed, report water level to server
+    if waterLevel != lastWaterLevel and connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
-        print("Message sent to MQTT server")
-
-
-while(True):
-    if timeSinceLastUpdate == updateInterval:
-        timeSinceLastUpdate = 0
-        measureAndReport()
-    else:
-        timeSinceLastUpdate += 1
+        print("Sensor value(s) sent to MQTT server")
+        lastWaterLevel = waterLevel
     mqttClient.check_msg()
     sleep(1)
