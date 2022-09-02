@@ -1,9 +1,13 @@
-# 💧🐕 Home Assistant Dog Bowl Water Level Sensor
+# 💧🐕 Home Assistant Dog Bowl Water Level Sensor <!-- omit in toc -->
 
 - [Materials](#materials)
-- [3D printing](#3d-printing)
+- [3D Printing](#3d-printing)
+  - [*STLs*](#stls)
+  - [*Fusion360*](#fusion360)
 - [Construction](#construction)
-- [Setup](#setup)
+- [Programming](#programming)
+- [Calibration](#calibration)
+- [Home Assistant](#home-assistant)
   
 # Materials
 
@@ -12,18 +16,46 @@ You'll need the following to build the sensor:
 | Item | Quantity |
 | --- | --- |
 | Raspi Pico W | 1 |
-| 3D printed base | 1 |
-| M5 x 6 mm screw | 2 |
-| [TAL220B Load Sensor](https://www.sparkfun.com/products/14729) | 1 |
-| [HX711 Load Sensor Amplifier](https://www.sparkfun.com/products/13879) | 1 |
+| [3D printed base](base/) | 1 |
+| M5 x 12 mm screw | 2 |
+| [TAL220B Load Cell](https://www.sparkfun.com/products/14729) | 1 |
+| [HX711 Load Sensor Amplifier](https://www.sparkfun.com/products/13879) (any HX711 board will do) | 1 |
 
-If you want to use the electronics enclosure, you'll also need:
+# 3D Printing
 
-| Item | Quantity |
-| --- | --- |
-| 3D printed electronics enclosure | 1 |
-| M2 x 6 mm screw | 4 |
-| M3 x 4 mm screw | 4 |
-| [Raspi Pico Breakout Board](https://www.amazon.com/Treedix-Compatible-Raspberry-Breakout-Flexible/dp/B091F7YSCD/) | 1 |
-| Female jumper wire ends | 9 |
+You'll need to 3D print the top and bottom of the scale. I recommend printing with PETG since the scale body might get wet while in use.
 
+## *STLs*
+
+STL files are included [here](base/) for the top and bottom of the scale. The scale top has a diameter of 160 mm. If that is too big or small for your dog's bowl, you'll have to modify the model.
+
+## *Fusion360*
+
+A fusion360 model is also located [here](base/). The model has a user parameter `ScaleDiameter` that can be changed to suit the size of your dog's bowl.
+
+# Construction
+
+1) Wire up the Raspi Pico W and the HX711 load sensor amplifier as shown below:
+
+![wiring image](media/wiring.png)
+
+2) Assemble the scale by inserting the load cell between the scale bottom and the scale top and securing with the M5 screws:
+
+![construction image](media/construction.gif)
+
+# Programming
+
+1) Enable MQTT on Home Assistant (install an MQTT broker).
+2) Install Micropython on the Raspi Pico W. Instructions [here](https://www.raspberrypi.com/documentation/microcontrollers/micropython.html).
+3) Fill out WiFi SSID, WiFi password, MQTT server (or IP address), MQTT username, and MQTT password in [secrets-template](src/lib/secrets-template.py).
+4) Rename [secrets-template](src/lib/secrets-template.py) file to `secrets`.
+5) Mount Raspi Pico W as flash drive on computer. Put files in `/src` directory of this repo on the Raspi Pico W. You can also open the repo in VSCode and upload to the board with the [Pico-Go extension](http://pico-go.net).
+
+# Calibration
+
+1) First, get the raw value of the scale with nothing on it (you can use the `Raw value` output in the serial console when nothing is on the scale). Replace `loadCellZeroValue` in the config variable section with this value.
+2) Next, get the raw value of the scale with something you know the weight of in grams (you can weigh something with another scale). The calculate `loadCellScalingFactor` according to the following formula: `scaleRawValueWithKnownWeight * loadCellScalingFactor = knownWeight`. Replace `loadCellScalingFactor` in the config variable section with this value.
+3) Finally, get the scaled value of the scale with your dog's bowl on it (you can use the `Scaled value` output in the serial console when your dog's bowl is on the scale). Replace `emptyBowlWeight` with this vaulue in the config variable section with this value.
+# Home Assistant
+
+The sensor will be automatically added to Home Assistant via MQTT discovery.

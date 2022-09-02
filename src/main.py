@@ -54,7 +54,7 @@ config = {
     "value_template": "{{ value_json.waterLevel }}",
     "unit_of_measurement": "oz"
 }
-mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword)
+mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword) if secrets.mqttUsername != "" and secrets.mqttPassword != "" else MQTTClient(sensorName, secrets.mqttServerAddress)
 # MQTT callback
 def onMQTTMessage(topic, msg, retain, dup):
     print(f"MQTT message received on topic {topic} - message \"{msg}\"")
@@ -105,9 +105,10 @@ lastWaterLevel = 0
 
 while(True):
     # read load cell and calculate water level in bowl
-    scaledValue = (loadCell.read() - loadCellZeroValue) / loadCellScalingFactor
+    rawValue = loadCell.read()
+    scaledValue = (rawValue - loadCellZeroValue) / loadCellScalingFactor
     waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
-    print(f"Water level: {waterLevel}")
+    print(f"Raw scale value: {rawValue} | Scaled value: {scaledValue} | Water level: {waterLevel}")
     # if water level has changed, report water level to server
     if waterLevel != lastWaterLevel and connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
