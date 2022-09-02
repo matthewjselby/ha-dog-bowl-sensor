@@ -45,7 +45,7 @@ A fusion360 model is also located [here](base/). The model has a user parameter 
 
 # Programming
 
-1) Enable MQTT on Home Assistant (install an MQTT broker).
+1) Set up an MQTT Broker with Home Assistant (e.g., the [Mosquitto add-on](https://github.com/home-assistant/addons/blob/master/mosquitto/DOCS.md)).
 2) Install Micropython on the Raspi Pico W. Instructions [here](https://www.raspberrypi.com/documentation/microcontrollers/micropython.html).
 3) Fill out WiFi SSID, WiFi password, MQTT server (or IP address), MQTT username, and MQTT password in [secrets-template](src/lib/secrets-template.py).
 4) Rename [secrets-template](src/lib/secrets-template.py) file to `secrets`.
