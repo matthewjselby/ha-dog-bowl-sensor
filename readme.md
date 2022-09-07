@@ -53,7 +53,7 @@ A fusion360 model is also located in the `base` folder. The model has a user par
 # Calibration
 
 1) First, get the raw value of the scale with nothing on it (you can use the `Raw value` output in the serial console when nothing is on the scale). Replace `loadCellZeroValue` in the config variable section with this value.
-2) Next, get the raw value of the scale with something you know the weight of in grams (you can weigh something with another scale). The calculate `loadCellScalingFactor` according to the following formula: `scaleRawValueWithKnownWeight * loadCellScalingFactor = knownWeight`. Replace `loadCellScalingFactor` in the config variable section with this value.
+2) Next, get the raw value of the scale with something you know the weight of in grams (you can weigh something with another scale). The calculate `loadCellScalingFactor` according to the following formula: `loadCellScalingFactor = knownWeight / (scaleRawValueWithKnownWeight - loadCellZeroValue)`. Replace `loadCellScalingFactor` in the config variable section with this value.
 3) Finally, get the scaled value of the scale with your dog's bowl on it (you can use the `Scaled value` output in the serial console when your dog's bowl is on the scale). Replace `emptyBowlWeight` with this vaulue in the config variable section with this value.
 # Home Assistant
 
