@@ -47,7 +47,7 @@ A fusion360 model is also located [here](base/). The model has a user parameter 
 2) Install Micropython on the Raspi Pico W. Instructions [here](https://www.raspberrypi.com/documentation/microcontrollers/micropython.html).
 3) Fill out WiFi SSID, WiFi password, MQTT server (or IP address), MQTT username, and MQTT password in [secrets-template](src/lib/secrets-template.py).
 4) Rename [secrets-template](src/lib/secrets-template.py) file to `secrets`.
-5) Mount Raspi Pico W as flash drive on computer. Put files in `/src` directory of this repo on the Raspi Pico W. You can also open the repo in VSCode and upload to the board with the [Pico-Go extension](http://pico-go.net).
+5) Mount Raspi Pico W as flash drive on computer. Put `main.py` and `lib` folder on the Raspi Pico W. You can also open in VSCode and upload to the board with the [Pico-Go extension](http://pico-go.net).
 
 # Calibration
 
