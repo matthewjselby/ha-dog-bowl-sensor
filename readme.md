@@ -25,11 +25,11 @@ You'll need to 3D print the top and bottom of the scale. I recommend printing wi
 
 ## *STLs* <!-- omit in toc -->
 
-STL files are included [here](base/) for the top and bottom of the scale. The scale top has a diameter of 160 mm. If that is too big or small for your dog's bowl, you'll have to modify the model.
+STL files are included in the `base` folder for the top and bottom of the scale. The scale top has a diameter of 160 mm. If that is too big or small for your dog's bowl, you'll have to modify the model.
 
 ## *Fusion360* <!-- omit in toc -->
 
-A fusion360 model is also located [here](base/). The model has a user parameter `ScaleDiameter` that can be changed to suit the size of your dog's bowl.
+A fusion360 model is also located in the `base` folder. The model has a user parameter `ScaleDiameter` that can be changed to suit the size of your dog's bowl.
 
 # Construction
 
@@ -46,7 +46,7 @@ A fusion360 model is also located [here](base/). The model has a user parameter 
 1) Set up an MQTT Broker with Home Assistant (e.g., the [Mosquitto add-on](https://github.com/home-assistant/addons/blob/master/mosquitto/DOCS.md)).
 2) Install Micropython on the Raspi Pico W. Instructions [here](https://www.raspberrypi.com/documentation/microcontrollers/micropython.html).
 3) Fill out WiFi SSID, WiFi password, MQTT server (or IP address), MQTT username, and MQTT password in [secrets-template](src/lib/secrets-template.py).
-4) Rename [secrets-template](src/lib/secrets-template.py) file to `secrets`.
+4) Rename [secrets-template](lib/secrets-template.py) file to `secrets`.
 5) Mount Raspi Pico W as flash drive on computer. Put `main.py` and `lib` folder on the Raspi Pico W. You can also open in VSCode and upload to the board with the [Pico-Go extension](http://pico-go.net).
 
 # Calibration
