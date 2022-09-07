@@ -6,7 +6,8 @@
 - [Programming](#programming)
 - [Calibration](#calibration)
 - [Home Assistant](#home-assistant)
-  
+- [Credits](#credits)
+
 # Materials
 
 You'll need the following to build the sensor:
@@ -57,3 +58,8 @@ A fusion360 model is also located in the `base` folder. The model has a user par
 # Home Assistant
 
 The sensor will be automatically added to Home Assistant via MQTT discovery.
+
+# Credits
+
+- [HX711 Micropython library](https://github.com/SergeyPiskunov/micropython-hx711) by Sergey Piskunov
+- [MQTT Micropython library](https://github.com/fizista/micropython-umqtt.robust2) by fizista
