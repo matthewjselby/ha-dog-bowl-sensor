@@ -2,8 +2,6 @@
 
 - [Materials](#materials)
 - [3D Printing](#3d-printing)
-  - [*STLs*](#stls)
-  - [*Fusion360*](#fusion360)
 - [Construction](#construction)
 - [Programming](#programming)
 - [Calibration](#calibration)
@@ -16,7 +14,7 @@ You'll need the following to build the sensor:
 | Item | Quantity |
 | --- | --- |
 | Raspi Pico W | 1 |
-| [3D printed base](base/) | 1 |
+| [3D printed base](base) | 1 |
 | M5 x 12 mm screw | 2 |
 | [TAL220B Load Cell](https://www.sparkfun.com/products/14729) | 1 |
 | [HX711 Load Sensor Amplifier](https://www.sparkfun.com/products/13879) (any HX711 board will do) | 1 |
@@ -25,11 +23,11 @@ You'll need the following to build the sensor:
 
 You'll need to 3D print the top and bottom of the scale. I recommend printing with PETG since the scale body might get wet while in use.
 
-## *STLs*
+## *STLs* <!-- omit in toc -->
 
 STL files are included [here](base/) for the top and bottom of the scale. The scale top has a diameter of 160 mm. If that is too big or small for your dog's bowl, you'll have to modify the model.
 
-## *Fusion360*
+## *Fusion360* <!-- omit in toc -->
 
 A fusion360 model is also located [here](base/). The model has a user parameter `ScaleDiameter` that can be changed to suit the size of your dog's bowl.
 

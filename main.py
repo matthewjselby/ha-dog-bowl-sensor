@@ -9,11 +9,11 @@ import secrets
 ###############################################################################################################
 # Config variables
 ###############################################################################################################
-sensorName = "water_bowl_sensor"            # name of the sensor (this is how the sensor will show up in Home Assistant)
-sensorFriendlyName = "Water bowl sensor"    # friendly name of sensor to be shown in Home Assistant
-loadCellZeroValue = -81500                  # load cell specific zero value (what does your load cell read with zero weight on it?) - raw value (not grams)
+sensorName = "water_bowl_sensor"            # name of the sensor
+sensorFriendlyName = "Water bowl sensor"    # friendly name of sensor to be shown in Home Assistant (this is how the sensor will be shown in the HA frontend)
+loadCellZeroValue = -82420                  # load cell specific zero value (what does your load cell read with zero weight on it?) - raw value (not grams)
 loadCellScalingFactor = 227                 # scaling factor to convert raw value read from load cell to grams
-emptyBowlWeight = 1140                      # how many grams does the empty water bowl weigh?
+emptyBowlWeight = 1255                      # how many grams does the empty water bowl weigh?
 
 ###############################################################################################################
 # WiFi setup
@@ -23,7 +23,7 @@ wlan.active(True)
 def connectToWiFi():
     if wlan.isconnected():
         status = wlan.ifconfig()
-        print('Connected to WiFi with IP: ' + status[0])
+        print(f"Connected to WiFi with IP: {status[0]}")
         return True
     print("Connecting to WiFi")
     wlan.connect(secrets.wifiSSID, secrets.wifiPassword)
@@ -31,13 +31,13 @@ def connectToWiFi():
     timeBetweenConnectionAttempts = 60
     connectionAttemptNumber = 1
     while not wlan.isconnected() and connectionAttemptNumber <= maxConnectionAttempts:
-        print("Failed to connect to WiFi...trying again in " + str(timeBetweenConnectionAttempts) + " seconds (reconnection attempt " + str(connectionAttemptNumber) + ")")
+        print(f"Failed to connect to WiFi...trying again in {timeBetweenConnectionAttempts} seconds (reconnection attempt {connectionAttemptNumber})")
         wlan.connect(secrets.wifiSSID, secrets.wifiPassword)
         connectionAttemptNumber += 1
         sleep(timeBetweenConnectionAttempts)
     if wlan.isconnected():
         status = wlan.ifconfig()
-        print('Connected to WiFi with IP: ' + status[0])
+        print(f"Connected to WiFi with IP: {status[0]}")
         return True
     else:
         print(f"Failed to connect to WiFi after {maxConnectionAttempts} tries")
@@ -47,12 +47,13 @@ connectToWiFi()
 ###############################################################################################################
 # MQTT setup
 ###############################################################################################################
-stateTopic = "homeassistant/" + sensorName + "/state"
+stateTopic = f"homeassistant/{sensorName}/state"
 config = {
     "name" : sensorFriendlyName,
     "state_topic": stateTopic,
     "value_template": "{{ value_json.waterLevel }}",
-    "unit_of_measurement": "oz"
+    "unit_of_measurement": "oz",
+    "icon": "mdi:water-outline"
 }
 mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword) if secrets.mqttUsername != "" and secrets.mqttPassword != "" else MQTTClient(sensorName, secrets.mqttServerAddress)
 # MQTT callback
@@ -108,11 +109,12 @@ while(True):
     rawValue = loadCell.read()
     scaledValue = (rawValue - loadCellZeroValue) / loadCellScalingFactor
     waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
-    print(f"Raw scale value: {rawValue} | Scaled value: {scaledValue} | Water level: {waterLevel}")
+    print(f"Raw scale value: {rawValue}\t | Scaled value: {scaledValue}\t | Water level: {waterLevel}")
     # if water level has changed, report water level to server
-    if waterLevel != lastWaterLevel and connectToWiFi() and connectToMQTT():
+    if waterLevel >= 0 and waterLevel != lastWaterLevel and connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
         print("Sensor value(s) sent to MQTT server")
         lastWaterLevel = waterLevel
+    # check for MQTT messages from subscribed topics
     mqttClient.check_msg()
-    sleep(1)
+    sleep(5)
