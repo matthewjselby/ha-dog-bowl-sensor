@@ -14,7 +14,7 @@ You'll need the following to build the sensor:
 | Item | Quantity |
 | --- | --- |
 | Raspi Pico W | 1 |
-| [3D printed base](base) | 1 |
+| 3D printed base | 1 |
 | M5 x 12 mm screw | 2 |
 | [TAL220B Load Cell](https://www.sparkfun.com/products/14729) | 1 |
 | [HX711 Load Sensor Amplifier](https://www.sparkfun.com/products/13879) (any HX711 board will do) | 1 |
