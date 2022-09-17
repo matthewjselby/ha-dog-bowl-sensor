@@ -28,11 +28,11 @@ You'll need to 3D print the top and bottom of the scale. I recommend printing wi
 
 ## *STLs* <!-- omit in toc -->
 
-STL files are included in the `base` folder for the top and bottom of the scale. The scale top has a diameter of 180 mm. If that is too big or small for your dog's bowl, you'll have to modify the model.
+STL files are included in the `body` folder for the top and bottom of the scale. The scale top has a diameter of 180 mm. If that is too big or small for your dog's bowl, you'll have to modify the model.
 
 ## *Fusion360* <!-- omit in toc -->
 
-A fusion360 model is also located in the `base` folder. The model has a user parameter `ScaleDiameter` that can be changed to suit the size of your dog's bowl.
+A fusion360 model is also located in the `body` folder. The model has a user parameter `ScaleDiameter` that can be changed to suit the size of your dog's bowl.
 
 # Construction
 
