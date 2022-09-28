@@ -1,6 +1,6 @@
 # 💧🐕 Home Assistant Dog Bowl Water Level Sensor <!-- omit in toc -->
 
-Measures how much water remains in your dog's bowl and reports to Home Assistant for all your automation needs.
+Measures how much water **remains** in your dog's bowl and reports to Home Assistant for all your automation needs.
 
 - [Materials](#materials)
 - [3D Printing](#3d-printing)
