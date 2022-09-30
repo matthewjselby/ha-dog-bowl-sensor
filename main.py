@@ -105,11 +105,19 @@ loadCell.channel = HX711.CHANNEL_A_64
 lastWaterLevel = 0
 
 while(True):
-    # read load cell and calculate water level in bowl
-    rawValue = loadCell.read()
+    # read load cell a number of times and get average value (try to ignore outliers)
+    numberOfReads = 20
+    rawValues = []
+    for i in range(numberOfReads):
+        rawValues.append(loadCell.read())
+    rawValues.sort()
+    start = (numberOfReads // 2) - (numberOfReads // 4)
+    end = (numberOfReads // 2) + (numberOfReads // 4)
+    rawValue = sum(rawValues[start: end]) / len(rawValues[start: end])
+    # calculate water level from raw load cell values
     scaledValue = (rawValue - loadCellZeroValue) / loadCellScalingFactor
     waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
-    print(f"Raw scale value: {rawValue}\t | Scaled value: {scaledValue}\t | Water level: {waterLevel}")
+    print(f"Raw scale value: {rawValue}\t | \tScaled value: {scaledValue:.2f}\t | \tWater level: {waterLevel}")
     # if water level has changed, report water level to server
     if waterLevel >= 0 and waterLevel != lastWaterLevel and connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
