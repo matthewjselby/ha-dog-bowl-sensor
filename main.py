@@ -111,7 +111,7 @@ while(True):
     rawValues = []
     for i in range(numberOfReads):
         rawValues.append(loadCell.read())
-        sleep(2)
+        sleep(1)
     rawValues.sort()
     start = (numberOfReads // 2) - (numberOfReads // 4)
     end = (numberOfReads // 2) + (numberOfReads // 4)
@@ -120,7 +120,7 @@ while(True):
     scaledValue = (rawValue - loadCellZeroValue) / loadCellScalingFactor
     waterLevel = math.floor((scaledValue - emptyBowlWeight))
     # if water level has changed, report water level to server
-    percentDifference = (abs(lastReportedWaterLevel - waterLevel) / lastReportedWaterLevel) * 100
+    percentDifference = (abs(lastReportedWaterLevel - waterLevel) / lastReportedWaterLevel) * 100 if lastReportedWaterLevel > 0 else 100
     print(f"Raw scale value: {rawValue}\t | \tScaled value: {scaledValue:.2f}\t | \tWater level: {waterLevel}\t | \tPercent change: {percentDifference}")
     if waterLevel >= 0 and percentDifference > reportingThreshold and connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
