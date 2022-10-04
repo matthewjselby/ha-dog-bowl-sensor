@@ -14,6 +14,7 @@ sensorFriendlyName = "Water bowl sensor"    # friendly name of sensor to be show
 loadCellZeroValue = -82420                  # load cell specific zero value (what does your load cell read with zero weight on it?) - raw value (not grams)
 loadCellScalingFactor = 227                 # scaling factor to convert raw value read from load cell to grams
 emptyBowlWeight = 1255                      # how many grams does the empty water bowl weigh?
+reportingThreshold = 10                     # percentage difference in measurements to trigger a report to HomeAssistant
 
 ###############################################################################################################
 # WiFi setup
@@ -52,7 +53,7 @@ config = {
     "name" : sensorFriendlyName,
     "state_topic": stateTopic,
     "value_template": "{{ value_json.waterLevel }}",
-    "unit_of_measurement": "oz",
+    "unit_of_measurement": "ml",
     "icon": "mdi:water-outline"
 }
 mqttClient = MQTTClient(sensorName, secrets.mqttServerAddress, user=secrets.mqttUsername, password=secrets.mqttPassword) if secrets.mqttUsername != "" and secrets.mqttPassword != "" else MQTTClient(sensorName, secrets.mqttServerAddress)
@@ -62,7 +63,7 @@ def onMQTTMessage(topic, msg, retain, dup):
     if topic == b"homeassistant/status" and msg == b"online":
         print("Home assistant restarted...resending sensor value(s)")
         if connectToWiFi() and connectToMQTT():
-            mqttClient.publish(stateTopic, json.dumps({'waterLevel': lastWaterLevel}))
+            mqttClient.publish(stateTopic, json.dumps({'waterLevel': lastReportedWaterLevel}))
             print("Message sent to MQTT server")
 # connect MQTT
 mqttClient.set_callback(onMQTTMessage)
@@ -102,7 +103,7 @@ mqttInitialConnectionMade = True
 ###############################################################################################################
 loadCell = HX711(d_out=17, pd_sck=16)
 loadCell.channel = HX711.CHANNEL_A_64
-lastWaterLevel = 0
+lastReportedWaterLevel = 0
 
 while(True):
     # read load cell a number of times and get average value (try to ignore outliers)
@@ -110,19 +111,21 @@ while(True):
     rawValues = []
     for i in range(numberOfReads):
         rawValues.append(loadCell.read())
+        sleep(2)
     rawValues.sort()
     start = (numberOfReads // 2) - (numberOfReads // 4)
     end = (numberOfReads // 2) + (numberOfReads // 4)
     rawValue = sum(rawValues[start: end]) / len(rawValues[start: end])
     # calculate water level from raw load cell values
     scaledValue = (rawValue - loadCellZeroValue) / loadCellScalingFactor
-    waterLevel = math.floor((scaledValue - emptyBowlWeight) / 29.57) # an ounce of water weighs 29.57 grams
-    print(f"Raw scale value: {rawValue}\t | \tScaled value: {scaledValue:.2f}\t | \tWater level: {waterLevel}")
+    waterLevel = math.floor((scaledValue - emptyBowlWeight))
     # if water level has changed, report water level to server
-    if waterLevel >= 0 and waterLevel != lastWaterLevel and connectToWiFi() and connectToMQTT():
+    percentDifference = (abs(lastReportedWaterLevel - waterLevel) / lastReportedWaterLevel) * 100
+    print(f"Raw scale value: {rawValue}\t | \tScaled value: {scaledValue:.2f}\t | \tWater level: {waterLevel}\t | \tPercent change: {percentDifference}")
+    if waterLevel >= 0 and percentDifference > reportingThreshold and connectToWiFi() and connectToMQTT():
         mqttClient.publish(stateTopic, json.dumps({'waterLevel': waterLevel}))
         print("Sensor value(s) sent to MQTT server")
-        lastWaterLevel = waterLevel
+        lastReportedWaterLevel = waterLevel
     # check for MQTT messages from subscribed topics
     mqttClient.check_msg()
     sleep(5)
